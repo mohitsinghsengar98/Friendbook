@@ -9,8 +9,9 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @State private var users : [User] = [User]()
-
+    @Environment(\.modelContext) private var modelContext
+    @Query private var users: [User]
+    
     var body: some View {
         NavigationSplitView {
             List {
@@ -32,16 +33,22 @@ struct ContentView: View {
                 UserDetailView(user: userDetail)
             }
             .task {
-                if users.isEmpty{
-                    do {
-                        let usersData = try await fetchJSON()
-                        print(users)
-                        users.append(contentsOf:usersData)
-                    } catch {
-                        print(error)
+                guard users.isEmpty else {
+                        print("Preloaded from SwiftData:", users.count)
+                        return
                     }
-                }else{
-                    print("Preloaded Data - \(users)")
+
+                do {
+                    let apiUsers = try await fetchJSON()   // decoded [User]
+                    
+                    for user in apiUsers {
+                        modelContext.insert(user)
+                    }
+                    
+                    try modelContext.save()
+                    print("Saved to SwiftData:", apiUsers.count)
+                } catch {
+                        print("Failed:", error)
                 }
             }
             .navigationTitle("Users")
@@ -62,4 +69,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .modelContainer(for: User.self, inMemory: true)
 }
