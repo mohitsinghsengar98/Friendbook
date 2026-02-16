@@ -9,8 +9,6 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
     @State private var users : [User] = [User]()
 
     var body: some View {
@@ -30,19 +28,8 @@ struct ContentView: View {
                         }
                     }
                 }
-                .onDelete(perform: deleteItems)
             }.navigationDestination(for: User.self) { userDetail in
                 UserDetailView(user: userDetail)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
             }
             .task {
                 if users.isEmpty{
@@ -71,24 +58,8 @@ struct ContentView: View {
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode([User].self, from: data)
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
-    }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }
